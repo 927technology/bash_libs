@@ -1,0 +1,24 @@
+#command references
+cmd_awk=/usr/bin/awk
+cmd_cat=/usr/bin/cat
+cmd_cp=/usr/bin/cp
+cmd_date=/usr/bin/date
+cmd_echo=/usr/bin/echo
+cmd_jq=/usr/bin/jq
+cmd_ln=/usr/bin/ln
+cmd_logger=/usr/bin/logger
+cmd_lvextend=/usr/sbin/lvextend
+cmd_lvs=/usr/sbin/lvs
+cmd_resize2fs=/usr/sbin/resize2fs
+cmd_rm=/usr/bin/rm
+cmd_rpm=/usr/bin/rpm
+cmd_sed=/usr/bin/sed
+cmd_semanage=/usr/sbin/semanage
+cmd_service=/usr/sbin/service
+cmd_systemctl=/usr/bin/systemctl
+cmd_tail=/usr/bin/tail
+cmd_tr=/usr/bin/tr
+cmd_unlink=/usr/bin/unlink
+cmd_vgdisplay=/usr/sbin/vgdisplay
+cmd_wget=/usr/bin/wget
+cmd_yum=/usr/bin/yum
