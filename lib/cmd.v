@@ -3,6 +3,7 @@ cmd_awk=/usr/bin/awk
 cmd_cat=/usr/bin/cat
 cmd_cp=/usr/bin/cp
 cmd_date=/usr/bin/date
+cmd_docker=/usr/bin/docker
 cmd_echo=/usr/bin/echo
 cmd_jq=/usr/bin/jq
 cmd_ln=/usr/bin/ln

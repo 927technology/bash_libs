@@ -25,6 +25,12 @@ function shell.directory.exists {
     local ldirectory=${1}                                                                   #full path t$
     [ -d ${ldirectory} ] && echo ${true} || echo ${false}
 }
+function shell.diskspace {
+        #accepts 0 args retruns json string of diskspace from df -h
+        local ldiskspace=`df -h | sed 's/  */ /g' | jq --raw-input --slurp 'split("\n") | map(split(" ")) | .[0:-1] | map( { "filesystem":.[0],"size":.[1],"used":.[2],"avail":.[3],"use":.[4],"mount":.[5] } )'`
+
+        echo ${ldiskspace}
+}
 function shell.file.exists {
     local lfile=${1}
     [ -f ${lfile} ] && echo ${true} || echo ${false}
@@ -43,7 +49,6 @@ function shell.file.stale {
 function shell.null {
     cat /dev/null
 }
-
 function shell.validate.package {
         #accepts 2 args.  1 is the package name 2 is the package manager e.g. rpm.  returns boolean true/false
         local lpackage_name=${1}
