@@ -1,7 +1,7 @@
 function shell.check.binary {
-    local lname=${1}                                                                        #binary name
+    local lname=${1}                                                                                    #binary name
 
-        which ${lname} 2>&1 > /dev/null                                                     #check path for bina$
+        ${cmd_which} ${lname} 2>&1 > /dev/null                                                          #check path for bina$
         [ ${?} -eq ${exitok} ] && echo ${true} || echo ${false}
 }
 function shell.dependancy.check {
@@ -12,39 +12,38 @@ function shell.dependancy.check {
 
     # ex: dependacies=jq,git
 
-    for dependancy in `echo ${dependacies} | sed 's/,/\ /g'`; do                       		#check for dependancies
+    for dependancy in `echo ${dependacies} | sed 's/,/\ /g'`; do                       		        #check for dependancies
             if [ `shell.check.binary ${dependancy}` -eq ${true} ]; then
-                    printf '| %-25s %-50s | \n' "${dependancy}" "present"
+                    ${cmd_printf} '| %-25s %-50s | \n' "${dependancy}" "present"
             else
-                    printf '| %-25s %-50s | \n' "${dependancy}" "missing"
-                    (( dep_err++ ))															#increment error count	
+                    ${cmd_printf} '| %-25s %-50s | \n' "${dependancy}" "missing"
+                    (( dep_err++ ))							                #increment error count	
             fi
     done
 }
 function shell.directory.exists {
-    local ldirectory=${1}                                                                   #full path t$
+    local ldirectory=${1}                                                                               #full path t$
     [ -d ${ldirectory} ] && echo ${true} || echo ${false}
 }
 function shell.file.exists {
     local lfile=${1}
-    [ -f ${lfile} ] && echo ${true} || echo ${false}
+    [ -f ${lfile} ] && ${cmd_echo} ${true} || ${cmd_echo} ${false}
 }
 function shell.file.stale {
-    local lfile=${1}                                                                        #ful$
-    local lmaxage=${2}                                                                      #max$
+    local lfile=${1}                                                                                    #full path to file
+    local lmaxage=${2}                                                                                  #max file age
 
-    if [ `shell.file.exists ${lfile}` ]; then                                               #ensure file exists
-            local loutput=`find "${lfile}" -mtime +${lmaxage} -print`                       #receives input if f$
-            [ ! -z ${loutput} ] && echo ${true} || echo ${false}                            #checks for variable$
+    if [ `shell.file.exists ${lfile}` ]; then                                                           #ensure file exists
+            local loutput=`find "${lfile}" -mtime +${lmaxage} -print`                                   #receives input if f$
+            [ ! -z ${loutput} ] && ${cmd_echo} ${true} || ${cmd_echo} ${false}                          #checks for variable existance
     else
-            echo ${false}                                                                   #exi$
+            ${cmd_echo} ${false}
     fi
 }
 function shell.null {
-    cat /dev/null
+    ${cmd_cat} /dev/null
 }
-
-function shell.validate.package {
+tion shell.validate.package {
         #accepts 2 args.  1 is the package name 2 is the package manager e.g. rpm.  returns boolean true/false
         local lpackage_name=${1}
         local lpackage_manager=${2}
@@ -71,9 +70,25 @@ function shell.validate.variable {
         ${cmd_echo} ${lexitstring}
 }
 function shell.log {
+    #accepts 1 arg as quoted string.  returns string.
     local lstring=${1}
     local ldate=`date.pretty`
 
-    ${cmd_echo} ${ldate} - ${lstring}                                              #output string to screen
-    #${cmd_logger} ${lstring}                                                       #output string to syslog
+    ${cmd_echo} ${ldate} - ${lstring}                                                                   #output string to screen
+
+                                                                                                        #output string to syslog
+    [ -z ${syslog_tag} ] && ${cmd_logger} ${lstring} || ${cmd_logger} -t ${syslog_tag} ${lstring}                                                       
+}
+function shell.log.screen {
+    #accepts 1 arg as quoted string.  returns string.
+    local lstring=${1}
+    local ldate=`date.pretty`
+
+    ${cmd_echo} ${ldate} - ${lstring}                                                                   #output string to screen                                                    
+}
+function shell.log.syslog {
+    #accepts 1 arg as quoted string.  sends log message to syslog
+    local lstring=${1}
+                                                                                                        #output string to syslog
+    [ -z ${syslog_tag} ] && ${cmd_logger} ${lstring} || ${cmd_logger} -t ${syslog_tag} ${lstring}                                                       
 }
