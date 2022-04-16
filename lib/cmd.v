@@ -34,6 +34,7 @@ cmd_tr=/usr/bin/tr
 cmd_unlink=/usr/bin/unlink
 cmd_vgdisplay=/usr/sbin/vgdisplay
 cmd_wc=/usr/bin/wc
+cmd_which=/usr/bin/which
 cmd_wget=/usr/bin/wget
 cmd_whoami=/usr/bin/whoami
 cmd_yum=/usr/bin/yum
