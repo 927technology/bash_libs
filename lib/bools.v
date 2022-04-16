@@ -1,0 +1,9 @@
+#bools
+exitok=0
+exitcrit=1
+no=0
+off=0
+on=1
+false=0
+true=1
+yes=1
