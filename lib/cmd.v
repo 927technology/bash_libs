@@ -35,6 +35,7 @@ cmd_tail=/usr/bin/tail
 cmd_tr=/usr/bin/tr
 cmd_unlink=/usr/bin/unlink
 cmd_vgdisplay=/usr/sbin/vgdisplay
+cmd_uuidgen=/usr/bin/uuidgen
 cmd_wc=/usr/bin/wc
 cmd_which=/usr/bin/which
 cmd_wget=/usr/bin/wget
