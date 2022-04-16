@@ -36,6 +36,12 @@ function shell.diskspace {
 
     echo ${ldiskspace}
 }
+function shell.diskspace {
+        #accepts 0 args retruns json string of diskspace from df -h
+        local ldiskspace=`df -h | sed 's/  */ /g' | jq --raw-input --slurp 'split("\n") | map(split(" ")) | .[0:-1] | map( { "filesystem":.[0],"size":.[1],"used":.[2],"avail":.[3],"use":.[4],"mount":.[5] } )'`
+
+        echo ${ldiskspace}
+}
 function shell.file.exists {
     local lfile=${1}
     [ -f ${lfile} ] && ${cmd_echo} ${true} || ${cmd_echo} ${false}
