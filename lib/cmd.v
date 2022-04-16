@@ -9,6 +9,7 @@ cmd_ln=/usr/bin/ln
 cmd_logger=/usr/bin/logger
 cmd_lvextend=/usr/sbin/lvextend
 cmd_lvs=/usr/sbin/lvs
+cmd_readlink=/usr/bin/readlink
 cmd_resize2fs=/usr/sbin/resize2fs
 cmd_rm=/usr/bin/rm
 cmd_rpm=/usr/bin/rpm
