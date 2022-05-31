@@ -1,3 +1,13 @@
+#20220504
+#build=0.0.2
+
+function oci.region {
+    #accpets 0 args, returns oci region,
+    
+    local lregion=`${cmd_cat} /etc/region`
+    
+    ${cmd_echo} ${lregion}
+}
 : '
 function oci.list.iam.ad {
     local lprofile=${1}

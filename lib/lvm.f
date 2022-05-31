@@ -1,4 +1,5 @@
-#requires cmd.v
+#20220504
+#build=0.0.2
 
 #physical volume
 function lvm.pv.check {
