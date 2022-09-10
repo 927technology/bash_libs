@@ -1,11 +1,14 @@
-#20220504
-#build=0.0.2
+#20220629
+#build=0.2.1
 
 function shell.check.binary {
-    local lname=${1}                                                                        #binary name
+    #20220629
+    #changed binary calls to variables
 
-        which ${lname} 2>&1 > /dev/null                                                     #check path for bina$
-        [ ${?} -eq ${exitok} ] && echo ${true} || echo ${false}
+    local lname=${1}                                                                                #binary name
+
+    ${cmd_which} ${lname} 2>&1 > /dev/null                                                          #check path for bina$
+    [ ${?} -eq ${exitok} ] && ${cmd_echo} ${true} || ${cmd_echo} ${false}
 }
 function shell.dependancy.check {
     #accepts global variable dependacies which is csv formatted unquoted string
@@ -15,18 +18,59 @@ function shell.dependancy.check {
 
     # ex: dependacies=jq,git
 
-    for dependancy in `echo ${dependacies} | sed 's/,/\ /g'`; do                       		#check for dependancies
-            if [ `shell.check.binary ${dependancy}` -eq ${true} ]; then
-                    printf '| %-25s %-50s | \n' "${dependancy}" "present"
-            else
-                    printf '| %-25s %-50s | \n' "${dependancy}" "missing"
-                    (( dep_err++ ))															#increment error count	
-            fi
-    done
+    #20220629
+    #accepts 1 arg of output.  legacy or bool.  verbose outputs legacy output, 
+    #bool only returns true/false if all passed.
+
+
+    local loutput_type=legacy
+    [ ! -z ${1} ] && local loutput_type=`shell.lcase ${1}`
+
+    case ${loutput_type} in 
+        bool)
+            local lexitcode=${false}                                                                #always fail closed
+            local lerrcount=0                                                                       #set error count to 0
+
+            for dependancy in `${cmd_echo} ${dependacies} | ${cmd_sed} 's/,/\ /g'`; do              #check for dependancies
+                [ `shell.check.binary ${dependancy}` -eq ${false} ] && (( lerrcount++ ))            #increment errcount on failures
+            done
+
+            [ ${lerrcount} -eq 0 ] && lexitcode=${true}                                             #exit code becomes true only if no failures 
+
+            ${cmd_echo} ${lexitcode}
+        ;;
+        legacy)
+            for dependancy in `echo ${dependacies} | sed 's/,/\ /g'`; do                       		#check for dependancies
+                    if [ `shell.check.binary ${dependancy}` -eq ${true} ]; then
+                            printf '| %-25s %-50s | \n' "${dependancy}" "present"
+                    else
+                            printf '| %-25s %-50s | \n' "${dependancy}" "missing"
+                            (( dep_err++ ))															#increment error count	
+                    fi
+            done
+        ;;
+    esac
+}
+function shell.directory.size {
+    #accepts 1 arg for directory path, returns json of exists, path, and size
+    #20220908
+
+    local lexists=${false}
+    local ljson="{}"
+    local lpath=${1}
+    local lsize=0
+
+    [ `shell.directory.exists ${lpath}` -eq ${true} ] && { lexists=${true}; lsize=`${cmd_du} -s ${path} | awk '{print $1}'`; }
+
+    ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '. |=.+ {"exists":"'${lexists}'"}'`
+    ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '. |=.+ {"path":"'${lpath}'"}'`
+    ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '. |=.+ {"sizeB":"'${lsize}'"}'`
+
+    ${cmd_echo} ${ljson}
 }
 function shell.diskspace {
         #accepts 0 args retruns json string of diskspace from df -h
-        local ldiskspace=`${cmd_df} -h | ${cmd_sed} 's/  */ /g' | ${cmd_sed} 's/%//g' | ${cmd_jq} --raw-input --slurp 'split("\n") | map(split(" ")) | .[0:-1] | map( { "filesystem":.[0],"size":.[1],"used":.[2],"avail":.[3],"use":.[4],"mount":.[5] } )'`
+        local ldiskspace=`${cmd_df} -h | ${cmd_tail} -n +2 | ${cmd_sed} 's/  */ /g' | ${cmd_sed} 's/%//g' | ${cmd_jq} --raw-input --slurp 'split("\n") | map(split(" ")) | .[0:-1] | map( { "filesystem":.[0],"size":.[1],"used":.[2],"avail":.[3],"use":.[4],"mount":.[5] } )'`
 
         echo ${ldiskspace}
 }

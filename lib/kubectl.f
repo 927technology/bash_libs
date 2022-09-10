@@ -25,7 +25,7 @@ function kubectl.ns.create {
     #accepts 1 arg.  1 name of namespace string.  returns boolean true/false if the namespace was created
 
     local lnamespace=${1}
-    local lexitstring=${false}
+    local lexgiitstring=${false}
 
     [ `kubectl.ns.exists ${lnamespace}` -eq ${true} ] || { ${cmd_kubectl} create namespace ${lnamespace} > /dev/null 2>&1; lexitstring=${true}; }
 
@@ -86,4 +86,17 @@ function kubectl.pods.status {
 
     local lexitstring={${lscript_json}\,${loutput_json}}
     ${cmd_echo} ${lexitstring}
+}
+function kubectl.validate.kubecontrol {
+    #accepts 0 args.  returns boolean of successfull communication with kubernetes cluster
+
+    local lexitcode=${false}                                                                        #always fail closed
+
+    ${cmd_kubectl} get nodes > /dev/null 2>&1
+		case ${?} in 
+			0) lexitcode=${true} ;;																    #exit ok
+			*) lexitcode=${false} ;;												                #exit !ok
+		esac
+
+    ${cmd_echo} ${lexitcode}
 }
