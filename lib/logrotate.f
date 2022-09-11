@@ -1,3 +1,6 @@
+#20220504
+#build=0.0.2
+
 function logrotate.config.parse {
     #accepts 2 args.  1 the name of the configuration file NOT the path, 2 text stream of logrotate file.  can be accomplished by using cat of the file into the function.  returns json array of configuration
 
@@ -47,7 +50,7 @@ function logrotate.config.parse {
         lcreate_group[i]=${false}
 
         for lconfig in `${cmd_echo} "${lstanza}"`; do
-            lfile[i]=`${cmd_echo} ${lstanza} | ${cmd_awk} -F" {" '{print $1}'`
+            lfile[i]=`${cmd_echo} ${lstanza} | ${cmd_awk} -F" {" '{print $1}' | awk -F" " '{print $1}'`
             lsettings[i]=`${cmd_echo} ${lstanza} | ${cmd_awk} -F" {" '{print $1}' | ${cmd_sed} 's/}$//g'`
 
             case ${lconfig} in
@@ -84,6 +87,7 @@ function logrotate.config.parse {
             esac
         done
     done
+
     IFS=${loldifs}                                                                                  #because we return things to where we found them
 
     local loutput=""

@@ -1,5 +1,111 @@
-#requires cmd.v
+#20220504
+#build=0.0.3
 
+#mount
+function mount.report {
+    #20220909
+    #cm
+    #accepts 0 args.  returns json of all block devices that are ext, vfat, and xfs.  
+    #declare local variables
+    local lbv_json=""
+    local llvm_lv_json=""
+    local llvm_pv_json=""
+    local llvm_vg_json=""
+    local lmount_device_json=""
+    local lmount_docker_json=""
+    local lmount_json=""
+    local ljson="{}"
+
+    #main
+                                                                                                    #get block volume data
+    lbv_json=`${cmd_osqueryi} 'select * from block_devices' --json 2> /dev/null`
+
+                                                                                                    #get mount point data
+    lmount_json=`${cmd_osqueryi} 'select * from mounts where type like "ext%" or type like "xfs%" or type like "%vfat%"' --json 2> /dev/null`
+
+                                                                                                    #get mount point data for docker containers
+    lmount_docker_json=`${cmd_osqueryi} 'select * from mounts where type == "nsfs" or type == "overlay" or type like "%vfat%"' --json 2> /dev/null`
+
+                                                                                                    #lvm physical volume info 
+    llvm_pv_json=`lvm.pv.report`
+                                                                                                    #lvm volume group info
+    llvm_vg_json=`lvm.vg.report`
+                                                                                                    #lvm logical volume info
+    llvm_lv_json=`lvm.lv.report`
+                                                                                                    #generate list of devices
+    lmount_devices=`${cmd_echo} ${lmount_json} | ${cmd_jq} -r '.[].device'`				    
+
+    i=-1
+    for mount_device in `echo $lmount_devices`; do
+        (( i++ ))
+        lmount_device_is_lvm=${false}
+        lmount_device_name=""
+        lmount_device_json=""
+        lmount_device_vg_json="{}"
+        lmount_device_vg_name=""
+        lmount_device_lv_json="{}"
+        lmount_device_lv_name=""
+
+                                                                                                    #get mount info for this device
+        lmount_device_json=`${cmd_echo} ${lmount_json} | ${cmd_jq} -c '.[] | select(.device == "'${mount_device}'")'`
+
+                                                                                                    #add mount info to json
+        ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.volumes['${i}'].mount |=.+ '${lmount_device_json}`
+
+                                                                                                    #add device name to json
+        ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.volumes['${i}'] |=.+ {"device":"'${mount_device}'"}'`
+
+                                                                                                    #get vg name
+        lmount_device_vg_name=`${cmd_echo} ${mount_device} | ${cmd_awk} -F"/" '{print $NF}' | ${cmd_awk} -F"-" '{print $1}'`
+
+                                                                                                    #get lv name
+        lmount_device_lv_name=`${cmd_echo} ${mount_device} | ${cmd_awk} -F"/" '{print $NF}' | ${cmd_awk} -F"-" '{print $2}'`
+
+                                                                                                    #set lvm to true if device name is present
+        [ ! -z ${lmount_device_lv_name} ] && lmount_device_is_lvm=${true}
+
+                                                                                                    #construct lvm data into json
+        if [ ${lmount_device_is_lvm} -eq ${true} ]; then
+
+                                                                                                    #retrieve pv data for this vg
+            lmount_device_pv_json=`${cmd_echo} ${llvm_pv_json} | ${cmd_jq} -c '. | select(.volume_group == "'${lmount_device_vg_name}'")'`
+
+                                                                                                    #add pv data to json
+            ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.volumes['${i}'].lvm.pv |=.+ '${lmount_device_pv_json}`
+
+                                                                                                    #retrieve vg data for this vg
+            lmount_device_vg_json=`${cmd_echo} ${llvm_vg_json} | ${cmd_jq} -c '. | select(.volume_group == "'${lmount_device_vg_name}'")'`
+
+                                                                                                    #add vg data to json
+            ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.volumes['${i}'].lvm.vg |=.+ '${lmount_device_vg_json}`
+
+                                                                                                    #retrieve lv data for the lv
+            lmount_device_lv_json=`${cmd_echo} ${llvm_lv_json} | ${cmd_jq} -c '. | select(.lv_name == "'${lmount_device_lv_name}'" and .vg_name == "'${lmount_device_vg_name}'")'`
+
+                                                                                                    #add lv data to json
+            ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.volumes['${i}'].lvm.lv |=.+ '${lmount_device_lv_json}`
+
+                                                                                                    #get the block volume for lvm partitions
+            lmount_device_name=`${cmd_echo} ${lmount_device_pv_json} | ${cmd_jq} -r '.physical_volume'`
+        else
+                                                                                                    #get the block volume for standard partitions
+            lmount_device_name=`${cmd_echo} ${lmount_device_json} | ${cmd_jq} -r '.device'`
+        fi
+                                                                                                    #add lvm status to json
+        ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.volumes['${i}'] |=.+ {"is_lvm":"'${lmount_device_is_lvm}'"}'`
+
+                                                                                                    #get block volume info for this device
+        lbv_device_json=`${cmd_echo} ${lbv_json} | ${cmd_jq} -c '.[] | select(.name == "'${lmount_device_name}'")'`
+
+                                                                                                    #add block volume info to json
+        ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.volumes['${i}'].block_volume |=.+ '${lbv_device_json}`
+
+
+        
+    done
+
+    ${cmd_echo} ${ljson} | ${cmd_jq} -c
+}
 #physical volume
 function lvm.pv.check {
     #accepts 1 arg. 1 vg name.  returns json of size
