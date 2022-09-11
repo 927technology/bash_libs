@@ -18,11 +18,13 @@ function docker.report {
 
     local ljson="{}"
     
+    local ldocker_image_active_key=""
     local ldocker_image_id=""
     local ldocker_image_repository=""
     local ldocker_image_tag=""
     local ldocker_images_active_count=0
     local ldocker_images_json=""
+    local ldocker_images_json_indexed=""
     local ldocker_images_total_count=0
 
     local ldocker_ps_exited_count=0
@@ -61,24 +63,25 @@ function docker.report {
 
                                                                                                     #find out if an image is in use
     for i in `${cmd_seq} 1 ${ldocker_ps_total_count}`; do
+        #set variable default values
+        ldocker_image_active_key=""
+
         ii=$(( ${i} -1 ))
 
         ldocker_ps_image=`${cmd_echo} ${ldocker_ps_json} | ${cmd_jq} -r '.['${ii}'].Image'`         #get image id for the container
+        ldocker_ps_image_repository=`${cmd_echo} ${ldocker_ps_image} | ${cmd_awk} -F":" '{print $1}'`         #get image id for the container
+        ldocker_ps_image_tag=`${cmd_echo} ${ldocker_ps_image} | ${cmd_awk} -F":" '{print $2}'`         #get image id for the container
 
-        for j in `${cmd_seq} 1 ${ldocker_images_total_count}`; do
-            jj=$(( ${j} -1 ))
 
-            ldocker_image_id=`${cmd_echo} ${ldocker_images_json} | ${cmd_jq} -r '.['${jj}'].ID'`    #get the image id  
-            ldocker_image_tag=`${cmd_echo} ${ldocker_images_json} | ${cmd_jq} -r '.['${jj}'].Tag'`  #get the image tag
-                                                                                                    #get the image id 
-            ldocker_image_repository=`${cmd_echo} ${ldocker_images_json} | ${cmd_jq} -r '.['${jj}'].Repository'`
+        ldocker_images_json_indexed=`${cmd_echo} ${ldocker_images_json} | ${cmd_jq} -c '. | to_entries'`
 
-                                                                                                    #set image to active if it is in use
-            if [ "${ldocker_ps_image}" == "${ldocker_image_id}" ] || [ "${ldocker_ps_image}" == "${ldocker_image_repository}:${ldocker_image_tag}" ]; then
-                ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.images['${jj}'] |=.+ {"active":'${true}'}'`
-                break
-            fi
-        done
+                                                                                                        #get the image key that matches
+        ldocker_image_active_key=`${cmd_echo} ${ldocker_images_json_indexed} | ${cmd_jq} '.[] | select((.value.Repository == "'${ldocker_ps_image_repository}'" and .value.Tag == "'${ldocker_ps_image_tag}'") or (.value.ID == "'${ldocker_ps_image_id}'")).key'`
+
+                                                                                                    #if key is not empty change active to true
+        if [ ! -z ${ldocker_image_active_key} ]; then
+            ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.images['${ldocker_image_active_key}'] |=.+ {"active":'${true}'}'`
+        fi
     done
 
                                                                                                     #count active images
