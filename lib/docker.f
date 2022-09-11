@@ -14,15 +14,24 @@ function docker.true {
     ${cmd_echo} ${lexitstring}
 }
 function docker.report {
+    #accepts 0 args.  returns json of docker ps and image status
+
     local ljson="{}"
-    local ldocker_ps_total_count=0
+    
+    local ldocker_image_id=""
+    local ldocker_image_repository=""
+    local ldocker_image_tag=""
+    local ldocker_images_active_count=0
+    local ldocker_images_json=""
+    local ldocker_images_total_count=0
+
+    local ldocker_ps_exited_count=0
+    local ldocker_ps_image=0
+    local ldocker_ps_json=""
+    local ldocker_ps_other_count=0
     local ldocker_ps_running_count=0
     local ldocker_ps_stopped_count=0
-    local ldocker_ps_other_count=0
-    local ldocker_ps_json=""
-
-
-
+    local ldocker_ps_total_count=0
 
     #docker image info                                                                                       
     ldocker_images_json=`${cmd_docker} images --format="{{ json . }}" | ${cmd_jq} -sc`              #get docker process json
@@ -36,16 +45,6 @@ function docker.report {
 
                                                                                                     #add image totals to json
     ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.stats.images |=.+ {"total":'"${ldocker_images_total_count}"'}'`
-
-
-
-
-
-
-
-
-
-
 
     #docker process info                                                                                              
     ldocker_ps_json=`${cmd_docker} ps -aq --format="{{ json . }}" | ${cmd_jq} -sc`                  #get docker process json  
