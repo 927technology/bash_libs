@@ -18,7 +18,7 @@ function mount.report {
 
     #main
                                                                                                     #get block volume data
-    lbv_json=`${cmd_osqueryi} 'select * from block_devices where model == "BlockVolume"' --json 2> /dev/null`
+    lbv_json=`${cmd_osqueryi} 'select * from block_devices' --json 2> /dev/null`
 
                                                                                                     #get mount point data
     lmount_json=`${cmd_osqueryi} 'select * from mounts where type like "ext%" or type like "xfs%" or type like "%vfat%"' --json 2> /dev/null`
@@ -91,6 +91,8 @@ function mount.report {
                                                                                                     #get the block volume for standard partitions
             lmount_device_name=`${cmd_echo} ${lmount_device_json} | ${cmd_jq} -r '.device'`
         fi
+                                                                                                    #add lvm status to json
+        ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.volumes['${i}'] |=.+ {"is_lvm":"'${lmount_device_is_lvm}'"}'`
 
                                                                                                     #get block volume info for this device
         lbv_device_json=`${cmd_echo} ${lbv_json} | ${cmd_jq} -c '.[] | select(.name == "'${lmount_device_name}'")'`
