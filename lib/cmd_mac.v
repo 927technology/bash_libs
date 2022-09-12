@@ -12,6 +12,7 @@ cmd_curl=/usr/bin/curl
 cmd_date=/usr/bin/date
 cmd_df=/usr/bin/df
 cmd_diff=/usr/bin/diff
+cmd_docker=/usr/local/bin/docker
 cmd_du=/usr/bin/du
 cmd_echo=/bin/echo
 cmd_egrep=/usr/bin/egrep

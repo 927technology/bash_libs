@@ -18,83 +18,83 @@ function docker.report {
 
     local ljson="{}"
     
-    local ldocker_image_active_key=""
-    local ldocker_image_id=""
-    local ldocker_image_repository=""
-    local ldocker_image_tag=""
-    local ldocker_images_active_count=0
-    local ldocker_images_json=""
-    local ldocker_images_json_indexed=""
-    local ldocker_images_total_count=0
+    local limage_active_key=""
+    local limage_id=""
+    local limage_repository=""
+    local limage_tag=""
+    local limages_active_count=0
+    local limages_json=""
+    local limages_json_indexed=""
+    local limages_total_count=0
 
-    local ldocker_ps_exited_count=0
-    local ldocker_ps_image=0
-    local ldocker_ps_json=""
-    local ldocker_ps_other_count=0
-    local ldocker_ps_running_count=0
-    local ldocker_ps_stopped_count=0
-    local ldocker_ps_total_count=0
+    local lps_exited_count=0
+    local lps_image=0
+    local lps_json=""
+    local lps_other_count=0
+    local lps_running_count=0
+    local lps_stopped_count=0
+    local lps_total_count=0
 
     #docker image info                                                                                       
-    ldocker_images_json=`${cmd_docker} images --format="{{ json . }}" | ${cmd_jq} -sc`              #get docker process json
+    limages_json=`${cmd_docker} images --format="{{ json . }}" | ${cmd_jq} -sc`                     #get docker process json
 
                                                                                                     #set the default active status for the image
-    ldocker_images_json=`${cmd_echo} ${ldocker_images_json} | ${cmd_jq} '.[] |=.+ {"active":'${false}'}'`
+    limages_json=`${cmd_echo} ${limages_json} | ${cmd_jq} '.[] |=.+ {"active":'${false}'}'`
 
-    ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.images |=.+ '"${ldocker_images_json}"`                #add docker image to json
+    ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.images |=.+ '"${limages_json}"`                       #add docker image to json
                                                                                                     
-    ldocker_images_total_count=`${cmd_echo} ${ldocker_images_json} | ${cmd_jq} '. | length'`        #get the number of images
+    limages_total_count=`${cmd_echo} ${limages_json} | ${cmd_jq} '. | length'`                      #get the number of images
 
                                                                                                     #add image totals to json
-    ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.stats.images |=.+ {"total":'"${ldocker_images_total_count}"'}'`
+    ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.stats.images |=.+ {"total":'"${limages_total_count}"'}'`
 
     #docker process info                                                                                              
-    ldocker_ps_json=`${cmd_docker} ps -aq --format="{{ json . }}" | ${cmd_jq} -sc`                  #get docker process json  
+    lps_json=`${cmd_docker} ps -aq --format="{{ json . }}" | ${cmd_jq} -sc`                         #get docker process json  
                                                                                                                                                                                                      
-    ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.ps |=.+ '"${ldocker_ps_json}"`                        #add docker ps to json
+    ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.ps |=.+ '"${lps_json}"`                               #add docker ps to json
 
-    ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.stats.ps |=.+ {"total":'"${ldocker_ps_total_count}"'}'`
+    ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.stats.ps |=.+ {"total":'"${lps_total_count}"'}'`
 
                                                                                                     #get the number of processes
-    ldocker_ps_total_count=`${cmd_echo} ${ldocker_ps_json} | ${cmd_jq} '. | length'`
-    ldocker_ps_exited_count=`${cmd_echo} ${ldocker_ps_json} | ${cmd_jq} '.[] | select(.State == "exited")' | ${cmd_jq} -s '. | length'`
-    ldocker_ps_running_count=`${cmd_echo} ${ldocker_ps_json} | ${cmd_jq} '.[] | select(.State == "running")' | ${cmd_jq} -s '. | length'`
-    ldocker_ps_other_count=$(( ${ldocker_ps_total_count} - ${ldocker_ps_running_count} - ${ldocker_ps_exited_count} ))
+    lps_total_count=`${cmd_echo} ${lps_json} | ${cmd_jq} '. | length'`
+    lps_exited_count=`${cmd_echo} ${lps_json} | ${cmd_jq} '.[] | select(.State == "exited")' | ${cmd_jq} -s '. | length'`
+    lps_running_count=`${cmd_echo} ${lps_json} | ${cmd_jq} '.[] | select(.State == "running")' | ${cmd_jq} -s '. | length'`
+    lps_other_count=$(( ${lps_total_count} - ${lps_running_count} - ${lps_exited_count} ))
 
                                                                                                     #find out if an image is in use
-    for i in `${cmd_seq} 1 ${ldocker_ps_total_count}`; do
+    for i in `${cmd_seq} 1 ${lps_total_count}`; do
         #set variable default values
-        ldocker_image_active_key=""
+        limage_active_key=""
 
         ii=$(( ${i} -1 ))
 
-        ldocker_ps_image=`${cmd_echo} ${ldocker_ps_json} | ${cmd_jq} -r '.['${ii}'].Image'`         #get image id for the container
-        ldocker_ps_image_repository=`${cmd_echo} ${ldocker_ps_image} | ${cmd_awk} -F":" '{print $1}'`         #get image id for the container
-        ldocker_ps_image_tag=`${cmd_echo} ${ldocker_ps_image} | ${cmd_awk} -F":" '{print $2}'`         #get image id for the container
+        lps_image=`${cmd_echo} ${lps_json} | ${cmd_jq} -r '.['${ii}'].Image'`                       #get image id for the container
+        lps_image_repository=`${cmd_echo} ${lps_image} | ${cmd_awk} -F":" '{print $1}'`             #get image id for the container
+        lps_image_tag=`${cmd_echo} ${lps_image} | ${cmd_awk} -F":" '{print $2}'`                    #get image id for the container
 
 
-        ldocker_images_json_indexed=`${cmd_echo} ${ldocker_images_json} | ${cmd_jq} -c '. | to_entries'`
+        limages_json_indexed=`${cmd_echo} ${limages_json} | ${cmd_jq} -c '. | to_entries'`
 
-                                                                                                        #get the image key that matches
-        ldocker_image_active_key=`${cmd_echo} ${ldocker_images_json_indexed} | ${cmd_jq} '.[] | select((.value.Repository == "'${ldocker_ps_image_repository}'" and .value.Tag == "'${ldocker_ps_image_tag}'") or (.value.ID == "'${ldocker_ps_image_id}'")).key'`
+                                                                                                    #get the image key that matches
+        limage_active_key=`${cmd_echo} ${limages_json_indexed} | ${cmd_jq} '.[] | select((.value.Repository == "'${lps_image_repository}'" and .value.Tag == "'${lps_image_tag}'") or (.value.ID == "'${lps_image_id}'")).key'`
 
                                                                                                     #if key is not empty change active to true
-        if [ ! -z ${ldocker_image_active_key} ]; then
-            ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.images['${ldocker_image_active_key}'] |=.+ {"active":'${true}'}'`
+        if [ ! -z ${limage_active_key} ]; then
+            ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.images['${limage_active_key}'] |=.+ {"active":'${true}'}'`
         fi
     done
 
                                                                                                     #count active images
-    ldocker_images_active_count=`${cmd_echo} ${ljson} | ${cmd_jq} '.images[] | select(.active == '${true}')' | ${cmd_jq} -s '. | length'`
+    limages_active_count=`${cmd_echo} ${ljson} | ${cmd_jq} '.images[] | select(.active == '${true}')' | ${cmd_jq} -s '. | length'`
 
                                                                                                     #add process totals to json
-    ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.stats.ps |=.+ {"total":'${ldocker_ps_total_count}'}'`
-    ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.stats.ps |=.+ {"exited":'${ldocker_ps_exited_count}'}'`
-    ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.stats.ps |=.+ {"running":'${ldocker_ps_running_count}'}'`
-    ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.stats.ps |=.+ {"other":'${ldocker_ps_other_count}'}'`
+    ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.stats.ps |=.+ {"total":'${lps_total_count}'}'`
+    ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.stats.ps |=.+ {"exited":'${lps_exited_count}'}'`
+    ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.stats.ps |=.+ {"running":'${lps_running_count}'}'`
+    ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.stats.ps |=.+ {"other":'${lps_other_count}'}'`
     
                                                                                                     #add active images to json
-    ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.stats.images |=.+ {"active":'${ldocker_images_active_count}'}'`
+    ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.stats.images |=.+ {"active":'${limages_active_count}'}'`
 
     ${cmd_echo} [${ljson}] | ${cmd_jq} -c
 }
