@@ -1,27 +1,16 @@
-#20220504
-#build=0.0.2
+version=0.2.0
 
-function systemd.service.report {
+function systemd.report {
+    #accepts 0 args, returns systemd status as json
+
     local ljson="{}"
+    local lunit_json=""
+    local lunits=device,mount,service,socket,target,timer
 
-    ljson=$(${cmd_echo} {\"services\":`${cmd_osqueryi} 'select * from systemd_units' --json | ${cmd_jq} -c`})
-    lunits_count=`${cmd_echo} ${ljson} | ${cmd_jq} '.services | length'`
-
-    for i in `${cmd_seq} 1 ${lunits_count}`; do
-        ii=$(( ${i} - 1 ))
-        
-        lid=`${cmd_echo} ${ljson} | ${cmd_jq} -r '.services['${ii}'].id'`
-
-        lname=`${cmd_echo} ${lid} | ${cmd_awk} -F"." '{print "\""$1"\""}'`
-        lname=$(${cmd_echo} ${lname} | ${cmd_sed} 's/\\/\\\\/g')
-
-
-        ltype=`${cmd_echo} ${lid} | ${cmd_awk} -F"." '{print "\""$2"\""}'`
-        ltype=$(${cmd_echo} ${ltype} | ${cmd_sed} 's/\\/\\\\/g')
-
-
-        ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.services['${ii}'] |=.+ {"name":'${lname}'}'`
-        ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.services['${ii}'] |=.+ {"type":'${ltype}'}'`
+    for unit in `${cmd_echo} ${lunits} | ${cmd_sed} 's/,/\ /g'`; do  
+        lunit_json=""
+        lunit_json=`${cmd_osqueryi} 'select * from systemd_units where id like "%.'${unit}'"' --json`  
+        ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.'${unit}'s |=.+ '"${lunit_json}"`
     done
 
     ${cmd_echo} ${ljson} | ${cmd_jq} -c
