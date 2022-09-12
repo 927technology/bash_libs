@@ -1,16 +1,36 @@
 version=0.2.0
 
 function systemd.report {
-    #accepts 0 args, returns systemd status as json
+    #accepts 1 args, comma seperate,  no white space list of units, returns systemd status of units as json
 
+    #declare local variables
     local ljson="{}"
     local lunit_json=""
-    local lunits=device,mount,service,socket,target,timer
-
+    local lunits=${1}
+    local lunits_success="${true}"                                                                  #i hate defalting true, need a better way for global success var
+    
     for unit in `${cmd_echo} ${lunits} | ${cmd_sed} 's/,/\ /g'`; do  
-        lunit_json=""
-        lunit_json=`${cmd_osqueryi} 'select * from systemd_units where id like "%.'${unit}'"' --json`  
-        ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.'${unit}'s |=.+ '"${lunit_json}"`
+        if [ "${unit}" == "device" ] || [ "${unit}" == "mount" ] || [ "${unit}" == "service" ] || [ "${unit}" == "socket" ] || [ "${unit}" == "target" ] || [ "${unit}" == "timer" ]; then
+            
+            #set default values
+            lunit_json=""
+            
+            lunit_json=`${cmd_osqueryi} 'select * from systemd_units where id like "%.'${unit}'"' --json`  
+            ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.'${unit}'s |=.+ '"${lunit_json}"`
+            
+                                                                                                    #set the success bool for the unit
+            if [ ${?} == ${exitok} ]; then
+                ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.'${unit}'s |=.+ {"success":"'${true}'"}'` #set success true for unit in json
+            else
+                                                                                                    #set success to false for unit in json
+                ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.'${unit}'s |=.+ {"success":"'${false}'"}'`
+                ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '. |=.+ {"success":"'${false}'"}'`          #set global success to false if one unit fails in json
+            fi
+            
+            
+        else
+            ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.'${unit}'s |=.+ {"success":"'${false}'"}'`    #set global success to false if unit name is not matched
+        fi
     done
 
     ${cmd_echo} ${ljson} | ${cmd_jq} -c
