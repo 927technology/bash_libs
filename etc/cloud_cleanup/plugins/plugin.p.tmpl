@@ -1,0 +1,34 @@
+#variables
+plugin_version=0.0.1
+
+#functions
+function plugin_intel {
+    #declare local variables
+    local ljson=${1}
+
+    #main
+    ${cmd_echo} ${ljson} | ${cmd_jq} -c
+}
+
+function plugin_logging {
+    #declare local variables
+    local ljson=${1}
+
+    #main
+    ${cmd_echo} ${ljson} | ${cmd_jq} -c
+}
+
+function plugin_output {
+    #declare local variables
+    local ljson=${1}
+
+    #main
+}
+
+function plugin_remediate {
+    #declare local variables
+    local ljson=${1}
+
+    #main
+    ${cmd_echo} ${ljson} | ${cmd_jq} -c
+}
