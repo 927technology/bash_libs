@@ -10,9 +10,9 @@ function plugin_intel {
     local lservices=$(${cmd_echo} ${services} | ${cmd_sed} 's/,/\|/g')
     
     #main
-    lservices_json=`systemd.report service | ${cmd_jq} '.services[] | select(.id | test("'${lservices}'"))' | ${cmd_jq} -s`
+    lservices_json=`systemd.report service | ${cmd_jq} '.services[] | select(.id | test("'${lservices}'"))' | ${cmd_jq} -sc`
 
-    ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.services |=.+ {"'${lservices_json}'"}'`
+    ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '. |=.+ {"services":'"${lservices_json}"'}'`
 
     ${cmd_echo} ${ljson} | ${cmd_jq} -c
 }
@@ -109,34 +109,52 @@ function plugin_output {
 function plugin_remediate {
 
     #decalare local variables
-    local ljson=${1}
-    local lservice_count=`${cmd_echo} ${ljson} | ${cmd_jq} '.services | length'`                       #get array length
     local lenabled=${false}
-    local lenabled_success_count=0
     local lenabled_failure_count=0
     local lenabled_output=""
     local lenabled_success=${false}
-    local lstatus=""
-    local lstatus_success=""
-    local lstatus_success_count=0
-    local lstatus_failure_count=0
+    local lenabled_success_count=0
+    
+    local ljson=${1}
+
     local lname=""
+    local lname_short=""
+
+    local lservices_count=`${cmd_echo} "${ljson}" | ${cmd_jq} '.services | length'`                 #get array length
+
+    local lstatus=${false}
+    local lstatus_failure_count=0
+    local lstatus_output=""
+    local lstatus_success="${false}"
+    local lstatus_success_count=0
 
     #main
-    for i in `${cmd_seq} 1 ${lservice_count}`; do 
+    for i in `${cmd_seq} 1 ${lservices_count}`; do 
 
         #set variable defaults
-        local lenabled=${false}
-        local lenabled_output=""
-        local lenabled_success=${false}
-        local lstatus=""
-        local lname=""
+        lenabled=${false}
+        lenabled_failure_count=0
+        lenabled_output=""
+        lenabled_success=${false}
+        lenabled_success_count=0
+    
+        lname=""
+        lname_short=""
 
-        ii= $(( ${i} - 1 ))                                                                         #array indexes alway run one less than integer length
+        lstatus=${false}
+        lstatus_failure_count=0
+        lstatus_output=""
+        lstatus_success="${false}"
+        lstatus_success_count=0
 
-        lname=`${cmd_echo} ${ljson} | ${cmd_jq} '.services['${ii}'].id'`                            #get service name from json
-        lenabled_output=`${cmd_systemctl} is-enabled ${id}`                                         #get enabled from json
-        lstatus_output=`${cmd_echo} ${ljson} | ${cmd_jq} '.services['${ii}'].active_state'`         #get status from json
+        ii=$(( ${i} - 1 ))                                                                          #array indexes alway run one less than integer length
+
+        lname=`${cmd_echo} ${ljson} | ${cmd_jq} -r '.services['${ii}'].id'` 
+        lname_short=`${cmd_echo} ${lname} | ${cmd_awk} -F"." '{print $1}'`                          #get service name from json
+
+        lenabled_output=`${cmd_systemctl} is-enabled ${lname_short}`                                #get enabled from json
+
+        lstatus_output=`${cmd_echo} ${ljson} | ${cmd_jq} -r '.services['${ii}'].active_state'`      #get status from json
 
                                                                                                     #set bool value for enable
         case "${lenabled_output}" in
@@ -152,23 +170,22 @@ function plugin_remediate {
         esac
 
                                                                                                     #add service name to stats output in json
-        ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.stats.services['${ii}'] |=.+ {"name":"'${lname}'"}'`
+        ljson=`${cmd_echo} "${ljson}" | ${cmd_jq} '.stats.services['${ii}'] |=.+ {"name":"'${lname}'"}'`
 
         #enable service
-                                                                                                    #enable service is disabled
+                                                                                                    #enable service if disabled
         if [ ${lenabled} -eq ${false} ]; then
-            [ ${dry_run} -eq ${true} ] ${cmd_systemctl} enable ${lname}
+            [ ${dry_run} -eq ${false} ] ${cmd_systemctl} enable ${lname}
                                                                                                     #did we success enabling the service
             if [ ${?} -eq ${exitok} ] && [ ${dry_run} -eq ${false} ]; then
                 lenabled_success=${true}                                                            #set success bit
-                $(( ${lenabled_success_count}++ ))                                                  #increment successes
+                (( lenabled_success_count++ ))                                                      #increment successes
             else    
                 lenabled_success=${false}                                                           #set failure bit
-                $(( ${lenabled_failure_count}++ ))                                                  #increment failures
+                (( lenabled_failure_count++ ))                                                      #increment failures
             fi
         else
-            lenabled_success=${true}                                                                #set success bit for services already enabled
-            $(( ${lenabled_success_count}++ ))                                                      #increment successes
+            lenabled=${true}
         fi
 
                                                                                                     #output stats to json
@@ -177,28 +194,26 @@ function plugin_remediate {
 
         #start service
         if [ ${lstatus} -eq ${false} ]; then
-            [ ${dry_run} -eq ${true} ] ${cmd_systemctl} start ${lname}
+            [ ${dry_run} -eq ${false} ] && ${cmd_systemctl} start ${lname}
                                                                                                     #did we success starting the service
             if [ ${?} -eq ${exitok} ] && [ ${dry_run} -eq ${false} ]; then
-                lstatus_success=${true}                                                            #set success bit
-                $(( ${lstatus_success_count}++ ))                                                  #increment successes
+                lstatus_success=${true}                                                             #set success bit
+                (( lstatus_success_count++ ))                                                       #increment successes
             else    
-                lstatus_success=${false}                                                           #set failure bit
-                $(( ${lstatus_failure_count}++ ))                                                  #increment failures
+                lstatus_success=${false}                                                            #set failure bit
+                (( lstatus_failure_count++ ))                                                       #increment failures
             fi
         else
-            lstatus_success=${true}                                                                #set success bit for services already enabled
-            $(( ${lstatus_success_count}++ ))                                                      #increment successes
+            lstatus=${true}
         fi
 
                                                                                                     #output stats to json
         ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.stats.services['${ii}'] |=.+ {"started":"'${lstatus}'"}'`
         ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.stats.services['${ii}'] |=.+ {"starting":"'${lstatus_success}'"}'`     
     done
-
                                                                                                     #output stats to json
-    ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.stats.enabled |=.+ {"success":"'${lenabled_success_count}'"}'`
-    ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.stats.enabled |=.+ {"failed":"'${lenabled_failure_count}'"}'`
+    ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.stats.enable |=.+ {"success":"'${lenabled_success_count}'"}'`
+    ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.stats.enable |=.+ {"failed":"'${lenabled_failure_count}'"}'`
     ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.stats.status |=.+ {"success":"'${lstatus_success_count}'"}'`
     ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.stats.status |=.+ {"failed":"'${lstatus_failure_count}'"}'`
 
