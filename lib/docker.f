@@ -96,5 +96,5 @@ function docker.report {
                                                                                                     #add active images to json
     ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.stats.images |=.+ {"active":'${limages_active_count}'}'`
 
-    ${cmd_echo} [${ljson}] | ${cmd_jq} -c
+    ${cmd_echo} ${ljson} | ${cmd_jq} -c
 }
