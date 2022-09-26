@@ -17,6 +17,7 @@ cmd_du=/usr/bin/du
 cmd_echo=/bin/echo
 cmd_egrep=/usr/bin/egrep
 cmd_envsubst=/usr/local/bin/envsubst
+cmd_find=/usr/bin/find
 cmd_git=/usr/bin/git
 cmd_grep=/usr/bin/grep
 cmd_gsed=/usr/local/bin/gsed

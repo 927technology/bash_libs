@@ -1,5 +1,63 @@
-#20220504
-#build=0.0.2
+#20220921
+#build=0.0.3
+
+function logrotate.report {
+    #lets see if we can do this without any input parameters?
+
+    #local variables
+    local lfrequency=""
+    local ljson="{}"
+    local llogrotate_json=""
+    local llogrotate_path=/etc/logrotate.d
+
+    declare -a llogrotate_data=""
+
+    oldifs=${IFS}
+    
+
+    #list all configuration files
+                                                                                                    #start counter
+    i=0
+    for file in `${cmd_find} ${llogrotate_path}/ -maxdepth 1 -type f`; do
+        llogrotate_data=""                                                                          #zero out variable
+        lfrequency=""
+        llogrotate_json=""
+                                                                                                    #ensure no empty variables
+        if [ ! -z ${file} ]; then
+                                                                                                    
+            (( i++ ))                                                                               #increment counter
+            ii=$(( ${i} - 1 ))                                                                      #set index
+            llogrotate_data=""                                                                      #zero out array
+                                                                                                    #add config file to json
+            ljson=`${cmd_echo} "${ljson}" | jq '.data.files['${ii}'] |=.+ {"configuration_file":"'${file}'"}'`
+
+            #parse each stanza in the file
+            j=0
+            IFS='}'                                                                                 #set delimiter to }
+                                                                                                    #flatten configuration file and loop
+            for stanza in `cat ${file} | ${cmd_grep} -v \# | ${cmd_sed} 's/{//g' | sed 's/\n/\ /g'`; do
+                (( j++ ))                                                                           #increment counter
+                jj=$(( ${j} - 1 ))                                                                  #set index
+                                                                                                    #set config parameters into an array to preserve 
+                                                                                                    #the spacing needed for the function arguments
+                if [ ! -z ${stanza} ]; then
+                    llogrotate_data[j]=${stanza}
+                fi
+            done 
+            IFS=${oldifs}                                                                           #because we return things where we found them
+                                                                                                    #loop stanzas and place them in json
+            for k in `${cmd_seq} 1 ${j}`; do
+                kk=$(( ${k} -1 ))
+                llogrotate_json=`logrotate.parse.config.string ${llogrotate_data[$k]}`
+                ljson=`${cmd_echo} "${ljson}" | jq '.data.files['${ii}'].config['${kk}'] |=.+ '${llogrotate_json}`
+                ljson=`${cmd_echo} "${ljson}" | jq '.data.files['${ii}'].config['${kk}'] |=.+ {"index":"'${kk}'"}'`
+            done
+        fi
+    done
+    
+    ${cmd_echo} ${ljson} | ${cmd_jq} -c
+    }
+
 
 function logrotate.config.parse {
     #accepts 2 args.  1 the name of the configuration file NOT the path, 2 text stream of logrotate file.  can be accomplished by using cat of the file into the function.  returns json array of configuration
@@ -91,7 +149,7 @@ function logrotate.config.parse {
     IFS=${loldifs}                                                                                  #because we return things to where we found them
 
     local loutput=""
-    local ljson=""
+    local ljson="{}"
 
     #output configs
     for record in `seq 1 ${#lfile[@]}`; do
@@ -102,4 +160,75 @@ function logrotate.config.parse {
     done
 
     echo "${loutput}"
+}
+
+function logrotate.parse.config.string {
+    #accepts a string of space delimited values from the logrotate.d config file. 
+    #one config per line
+
+    #local variables
+    local lfrequency=""
+    local lrotate=""
+    local lcompress=""
+    local ldelaycompress=""
+    local lmissingok=""
+    local lnotifempty=""
+    local lcreate_group=""
+    local lcreate_mode=""
+    local lcreate_owner=""
+    local ljson="{}"
+
+    i=0
+
+    #main
+    while [ "${1}" != "" ]; do
+        case ${1} in
+            /* )
+                if [ "${1}" != "/dev/null" ]; then
+                    (( i++ ))                                                                          #increment counter
+                    ii=$(( ${i} - 1 ))                                                                  #set index
+
+                    ljson=`${cmd_echo} "${ljson}" | ${cmd_jq} '.logpaths['${ii}'] |=.+ {"path":"'${1}'"}'`
+                fi
+            ;;
+            compress) lcompress=${true} ;;
+            create)
+                shift
+                lcreate_mode=${1}
+                shift
+                lcreate_owner=${1}
+                shift
+                lcreate_group=${1}
+            ;;
+            delaycompress) ldelaycompress=${true} ;;
+
+            #frequency
+            daily) lfrequency=d ;;
+            hourly) lfrequency=h ;;
+            monthly) lfrequency=m ;;
+            weekly) lfrequency=w ;;
+            yearly) lfrequency=y ;;
+
+            missingok) lmissingok=${true} ;;
+            notifempty) lnotifempty=${true} ;;
+            rotate) 
+                shift
+                lrotate=${1}
+            ;;
+        esac
+
+        shift
+    done
+
+    ljson=`${cmd_echo} "${ljson}" | jq '. |=.+ {"compress":"'${lcompress}'"}'`
+    ljson=`${cmd_echo} "${ljson}" | jq '.create |=.+ {"mode":"'${lcreate_mode}'"}'`
+    ljson=`${cmd_echo} "${ljson}" | jq '.create |=.+ {"owner":"'${lcreate_owner}'"}'`
+    ljson=`${cmd_echo} "${ljson}" | jq '.create |=.+ {"group":"'${lcreate_group}'"}'`
+    ljson=`${cmd_echo} "${ljson}" | jq '. |=.+ {"delaycompress":"'${ldelaycompress}'"}'`
+    ljson=`${cmd_echo} "${ljson}" | jq '. |=.+ {"frequency":"'${lfrequency}'"}'`
+    ljson=`${cmd_echo} "${ljson}" | jq '. |=.+ {"missingok":"'${lmissingok}'"}'`
+    ljson=`${cmd_echo} "${ljson}" | jq '. |=.+ {"notifempty":"'${lnotifempty}'"}'`
+    ljson=`${cmd_echo} "${ljson}" | jq '. |=.+ {"rotate":"'${lrotate}'"}'`
+
+    ${cmd_echo} ${ljson} | ${cmd_jq} -c
 }
