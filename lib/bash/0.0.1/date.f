@@ -1,5 +1,5 @@
 #20220504
-#build=0.0.2
+#version=0.0.1
 
 function date.pretty {
     #accepts no args.  returns date in YYYY-MM-DD_HH:MM:SS

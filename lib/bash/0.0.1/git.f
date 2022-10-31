@@ -1,4 +1,5 @@
-#20220519
+#date 20220519
+#version=0.0.1
 
 function git.clean {
     #accepts 2 args 1 git repo name 2 expected branch.  uses global git_root. returns no output

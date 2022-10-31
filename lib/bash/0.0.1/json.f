@@ -1,3 +1,6 @@
+#date 20221013
+#version=0.0.1
+
 function json.contains {
     #accepts 4 arguments.  
     #argument 1 is the json stream

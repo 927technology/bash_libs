@@ -1,5 +1,5 @@
 #20220504
-#build=0.0.2
+#version=0.0.1
 
 #command references
 cmd_awk=/usr/bin/awk
@@ -12,10 +12,12 @@ cmd_curl=/usr/bin/curl
 cmd_date=/usr/bin/date
 cmd_df=/usr/bin/df
 cmd_diff=/usr/bin/diff
+cmd_docker=/usr/local/bin/docker
 cmd_du=/usr/bin/du
 cmd_echo=/bin/echo
 cmd_egrep=/usr/bin/egrep
 cmd_envsubst=/usr/local/bin/envsubst
+cmd_find=/usr/bin/find
 cmd_git=/usr/bin/git
 cmd_grep=/usr/bin/grep
 cmd_gsed=/usr/local/bin/gsed
