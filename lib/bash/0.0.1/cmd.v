@@ -1,5 +1,5 @@
 #20220504
-#build=0.0.2
+#version=0.0.1
 
 #command references
 cmd_awk=/usr/bin/awk

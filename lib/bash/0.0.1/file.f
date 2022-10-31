@@ -1,3 +1,14 @@
+#date 20221013
+#version=0.0.1
+
+function file.size {
+        local lfile=${1}
+        local lsize=0
+
+        lsize=`${cmd_wc} -c < "${lfile}"`
+
+        ${cmd_echo} ${lsize}
+}
 function file.symlink.validate {
         #accepts 1 arg.  1 is path to simlink as string.  returns boolean true/false
         local lsymlink=${1}

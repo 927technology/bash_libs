@@ -1,7 +1,15 @@
 #20220504
-#build=0.0.3
+#build=0.0.1
 
 #mount
+function volume.df.report {
+    #20220929 cm
+    #accepts 0 args. returns json of all physical volumes
+    
+    local ljson=`${cmd_df} | ${cmd_tail} -n +2 | ${cmd_tr} -s ' ' | ${cmd_jq} --raw-input -s 'split("\n") | map(split(" ")) | .[0:-1] | map( { "filesystem": .[0],"1k_blocks":.[1],"used":.[2],"available":.[3],"use":.[4],"mount":.[5] } )'`
+
+    ${cmd_echo} ${ljson} | ${cmd_jq} -c
+}
 function mount.report {
     #20220909
     #cm
@@ -133,11 +141,12 @@ function lvm.pv.check {
 
 }
 function lvm.pv.report {
+    #20220929 cm
     #accepts 0 args. returns json of all physical volumes managed by lvm
     
-    local lpvreport=`${cmd_pvdisplay} -C | ${cmd_tail} -n +2 | ${cmd_tr} -s ' ' | ${cmd_sed} 's/ //' | ${cmd_sed} 's/<//g' | ${cmd_jq} --raw-input -s 'split("\n") | map(split(" ")) | .[0:-1] | map( { "physical_volume": .[0],"volume_group":.[1],"fmt":.[2],"attr":.[3],"psize":.[4],"pfree":.[5] } )' | ${cmd_jq} '.[]'`
+    local ljson=`${cmd_pvdisplay} -C | ${cmd_tail} -n +2 | ${cmd_tr} -s ' ' | ${cmd_sed} 's/ //' | ${cmd_sed} 's/<//g' | ${cmd_jq} --raw-input -s 'split("\n") | map(split(" ")) | .[0:-1] | map( { "physical_volume": .[0],"volume_group":.[1],"fmt":.[2],"attr":.[3],"psize":.[4],"pfree":.[5] } )'`
 
-    echo ${lpvreport}
+    ${cmd_echo} ${ljson} | ${cmd_jq} -c
 }
 #logical volume
 function lvm.lv.check { 
@@ -159,11 +168,13 @@ function lvm.lv.check {
     echo ${lexitstring}
 }
 function lvm.lv.report {
+    #20220929 cm
     #accepts 0 args.  returns json of all volumes managed by lvm
 
-    local llvreport=`${cmd_lvs} --reportformat json | ${cmd_jq} -c '.report[].lv[]'`                #output logical volume to json format for parsing
+                                                                                                    #output logical volume to json format for parsing
+    local ljson=`${cmd_lvs} --reportformat json | ${cmd_jq} -c '.report[].lv[]' | ${cmd_jq} -s`
                                                                           
-    echo ${llvreport}
+    echo ${ljson}
 }
 #volume group 
 function lvm.vg.check {
@@ -191,9 +202,10 @@ function lvm.vg.check {
     echo ${lexitstring}
 }
 function lvm.vg.report {
+    #20220929 cm
     #accepts 0 args. returns json of all volume groups managed by lvm
     
-    local lvgreport=`${cmd_vgdisplay} -C | ${cmd_tail} -n +2 | ${cmd_tr} -s ' ' | ${cmd_sed} 's/ //' | ${cmd_sed} 's/<//g' | ${cmd_jq} --raw-input -s 'split("\n") | map(split(" ")) | .[0:-1] | map( { "volume_group": .[0],"physical_volume":.[1],"logical_volume":.[3],"vsize":.[5],"vfree":.[6] } )' | ${cmd_jq} '.[]'`
+    local ljson=`${cmd_vgdisplay} -C | ${cmd_tail} -n +2 | ${cmd_tr} -s ' ' | ${cmd_sed} 's/ //' | ${cmd_sed} 's/<//g' | ${cmd_jq} --raw-input -s 'split("\n") | map(split(" ")) | .[0:-1] | map( { "volume_group": .[0],"physical_volume":.[1],"logical_volume":.[3],"vsize":.[5],"vfree":.[6] } )'`
 
-    echo ${lvgreport}
+    ${cmd_echo} "${ljson}" | ${cmd_jq} -c
 }

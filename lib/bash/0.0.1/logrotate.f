@@ -1,8 +1,35 @@
 #20220921
-#build=0.0.3
+#build=0.0.1
+
+function logrotate.files {
+    local lfile_size=0
+    local ljson=${1}
+    local lpath=`${cmd_echo} ${ljson} | ${cmd_jq} -r '.path'`
+    local lrotate=`${cmd_echo} ${ljson} | ${cmd_jq} -r '.rotate'`
+    local lrotate_error=${true}
+
+
+    [ -z ${lrotate} ] && lrotate=0
+
+    i=0
+    if [ -f ${lpath} ]; then
+        for file in `${cmd_ls} -t ${lpath}* | ${cmd_grep} ${lpath}[.]`; do
+            (( i++ ))
+            ii=$(( ${i} - 1 ))
+            lfile_size=0                                                                            #reset size counter
+
+            if [ "${file}" != "null" ]; then
+                lfile_size=`file.size "${file}"`
+                ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.data.files['${ii}'] |=.+ {"path":"'${file}'"}'`
+                ljson=`${cmd_echo} ${ljson} | ${cmd_jq} '.data.files['${ii}'] |=.+ {"sizeB":"'${lfile_size}'"}'`
+            fi
+        done
+    fi
+
+    ${cmd_echo} ${ljson} | ${cmd_jq} -c
+}
 
 function logrotate.report {
-    #lets see if we can do this without any input parameters?
 
     #local variables
     local lfrequency=""
@@ -12,13 +39,14 @@ function logrotate.report {
 
     declare -a llogrotate_data=""
 
-    oldifs=${IFS}
+    oldifs=${IFS}                                                                                   #ifs is a pain
     
 
     #list all configuration files
                                                                                                     #start counter
-    i=0
+    i=0 
     for file in `${cmd_find} ${llogrotate_path}/ -maxdepth 1 -type f`; do
+
         llogrotate_data=""                                                                          #zero out variable
         lfrequency=""
         llogrotate_json=""
@@ -49,8 +77,8 @@ function logrotate.report {
             for k in `${cmd_seq} 1 ${j}`; do
                 kk=$(( ${k} -1 ))
                 llogrotate_json=`logrotate.parse.config.string ${llogrotate_data[$k]}`
-                ljson=`${cmd_echo} "${ljson}" | jq '.data.files['${ii}'].config['${kk}'] |=.+ '${llogrotate_json}`
-                ljson=`${cmd_echo} "${ljson}" | jq '.data.files['${ii}'].config['${kk}'] |=.+ {"index":"'${kk}'"}'`
+                ljson=`${cmd_echo} "${ljson}" | jq '.data.files['${ii}'].configs['${kk}'] |=.+ '${llogrotate_json}`
+                ljson=`${cmd_echo} "${ljson}" | jq '.data.files['${ii}'].configs['${kk}'] |=.+ {"index":"'${kk}'"}'`
             done
         fi
     done
@@ -183,10 +211,10 @@ function logrotate.parse.config.string {
     #main
     while [ "${1}" != "" ]; do
         case ${1} in
-            /* )
-                if [ "${1}" != "/dev/null" ]; then
-                    (( i++ ))                                                                          #increment counter
-                    ii=$(( ${i} - 1 ))                                                                  #set index
+            /*)
+                if [ `${cmd_echo} ${1} | ${cmd_grep} -c /dev` -eq 0 ] && [ `${cmd_echo} ${1} | ${cmd_grep} -c /bin` -eq 0 ]; then
+                    (( i++ ))                                                                       #increment counter
+                    ii=$(( ${i} - 1 ))                                                              #set index
 
                     ljson=`${cmd_echo} "${ljson}" | ${cmd_jq} '.logpaths['${ii}'] |=.+ {"path":"'${1}'"}'`
                 fi

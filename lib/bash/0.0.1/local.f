@@ -1,3 +1,6 @@
+#date 20221013
+#version=0.0.1
+
 function help {
     echo you done messed up a-aron
 
