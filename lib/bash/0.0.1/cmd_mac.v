@@ -31,6 +31,7 @@ cmd_logger=/usr/bin/logger
 cmd_lvextend=/usr/sbin/lvextend
 cmd_lvs=/usr/sbin/lvs
 cmd_mkdir=/bin/mkdir
+cmd_oci=/usr/local/bin/oci
 cmd_odoctl=/usr/local/bin/odoctl
 cmd_osquery=/opt/flightrecorder/bin/osqueryi
 cmd_os_updater=/opt/os-updater/bin/os-updater

@@ -10,15 +10,15 @@ function is.datatype {
     
     
     case ${ldatatype} in
-        boolean)        lregex=^[01]$                           ;;
-        float)          lregex=^[-]?[0-9.]+$                    ;;
-        integer)        lregex=^[-]?[0-9]+$                     ;;
-        string)         lregex=^[0-9A-Za-z]+$                   ;;
-        string.shell)   lregex=^[\/0-9A-Za-z_.-]+$              ;;
-        string.special) lregex=^[\]\[\)\(\?\^\/0-9A-Za-z_.-]+$  ;;
+        boolean)        lregex=^[01]$                               ;;
+        float)          lregex=^[-]?[0-9.]+$                        ;;
+        integer)        lregex=^[-]?[0-9]+$                         ;;
+        string)         lregex=^[0-9A-Za-z_-]+$                     ;;
+        string.shell)   lregex=^[\/0-9A-Za-z_.-]+$                  ;;
+        string.special) lregex=^[\]\[\)\(\?\^\/0-9A-Za-z_.-]+$      ;;
     esac
 
-    if [ ! -z ${lregex} ]; then
+    if [ ! -z "${lregex}" ]; then
         [[ ${lvariable} =~ ${lregex} ]] && ${cmd_echo} ${true} || ${cmd_echo} ${false}
     else
         ${cmd_echo} ${false}

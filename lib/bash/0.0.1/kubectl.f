@@ -1,3 +1,6 @@
+#date 20221013
+#version=0.0.1
+
 function kubectl.deployments.status {
     #accepts 2 args.  1 name of the deployment 2 the namespace.  returns json string of status.
 

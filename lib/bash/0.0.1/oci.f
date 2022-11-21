@@ -152,6 +152,19 @@ function oci.hostname.deconstruct {
     local loutput="{\"success\":\"${lsuccess}\",\"region\":\"${lregion}\",\"tenancy\":\"${ltenancy}\",\"ad\":\"${lad}\",\"type\":\"${ltype}\",\"unit\":\"${lunit}\",\"team\":\"${lteam}\",\"role\":\"${lrole}\",\"index\":\"${lindex}\",\"name\":\"${lhn}\"}"
     echo ${loutput}
 }
+
+function oci.policy.count {
+
+    local ltenancy_ocid=${1}
+    local lprofile=${2}
+    local ltotal=0
+
+    if [ ! -z ${ltenancy_ocid} ] && [ ! -z ${lprofile} ]; then
+        ltotal=`${cmd_oci} iam policy list --compartment-id ${ltenancy_ocid} --profile ${lprofile} --all | ${cmd_jq} '.data[].id' | ${cmd_jq} -s '. | length'`
+    fi
+    
+    ${cmd_echo} ${ltotal}
+}
 function oci.sshkeyfile.parse {
     #testing cm
     #date 20220222
