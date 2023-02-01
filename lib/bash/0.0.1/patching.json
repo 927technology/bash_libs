@@ -1,0 +1,58 @@
+{
+  "version":"0.0.1",
+  "hosts":
+    [
+      {
+        "hostgroup": "prs-au-ap",
+        "cmd": "odoctl exec -i -a prs-au-ap-app /etc/authproxy/validation/validate.sh"
+      },
+      {
+        "hostgroup": "prs-au-apex",
+        "cmd": "odoctl exec -i -a prs-au-apex-app /postDeployValidate.sh"
+      },
+      {
+        "hostgroup": "prs-au-idp",
+        "cmd": "odoctl exec -i -a prs-au-idp-app /postDeployValidate.sh"
+      },
+      {
+        "hostgroup": "prs-au-support-ap",
+        "cmd": "odoctl exec -i -a prs-au-ap-app /etc/authproxy/validation/validate.sh"
+      },
+      {
+        "hostgroup": "prs-aus-ap",
+        "cmd": "odoctl exec -i -a prs-aus-ap-app /etc/authproxy/validation/validate.sh"
+      },
+      {
+        "hostgroup": "prs-aus-apex",
+        "cmd": "odoctl exec -i -a prs-aus-apex-app /postDeployValidate.sh"
+      },
+      {
+        "hostgroup": "prs-aus-idp",
+        "cmd": "odoctl exec -i -a prs-aus-idp-app /postDeployValidate.sh"
+      },
+      {
+        "hostgroup": "prs-aus-support-ap",
+        "cmd": "odoctl exec -i -a prs-aus-support-ap-app /etc/authproxy/validation/validate-support-ap.sh"
+      },
+      {
+        "hostgroup": "prs-shared-splunk",
+        "cmd": "odoctl exec -t -a prs-shared-splunk-app /opt/splunk/bin/splunk status"
+      }, 
+      {
+        "hostgroup": "prs-io-ap",
+        "cmd": "odoctl exec -i -a prs-io-ap-app /etc/authproxy/validation/validate.sh"
+      },
+      {
+        "hostgroup": "prs-io-apex",
+        "cmd": "odoctl exec -i -a prs-io-apex-app /postDeployValidate.sh"
+      },
+      {
+        "hostgroup": "prs-io-idp",
+        "cmd": "odoctl exec -i -a prs-io-idp-app /postDeployValidate.sh"
+      },
+      {
+        "hostgroup": "prs-io-support-ap",
+        "cmd": "odoctl exec -i -a prs-io-support-ap-app /etc/authproxy/validation/validate-support-ap.sh"
+      } 
+  ]
+}

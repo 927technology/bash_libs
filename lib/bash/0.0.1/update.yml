@@ -1,0 +1,18 @@
+---
+- name: update oracle linux instance
+  hosts: all
+  tasks:
+    - name: get os-updater status
+      become: true  
+      command: /opt/os-updater/bin/os-updater --status --json
+      register: updatestatus
+    - name: output facts file
+      delegate_to: localhost
+      run_once: true
+      copy:
+        content: "{{ hostvars[inventory_hostname] }}"
+        dest: ~/scripts/operations/var/log/test.json
+        
+#    - debug:
+#        #var: updatestatus.stdout
+#        msg="{{ updatestatus }}"
