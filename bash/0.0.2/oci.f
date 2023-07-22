@@ -1,5 +1,5 @@
-#20220504
-#build=0.0.1
+#20230720
+#build=0.0.2
 
 function oci.region {
     #accpets 0 args, returns oci region,
@@ -27,6 +27,26 @@ function oci.list.iam.homeregion {
     local liamregionsubscription=`oci.list.iam.regionsubscription | jq`
 }
 '
+
+function oci.get.metadata {
+    #accepts 0 args, returns oci metadata
+    #this must be used inside an oci instance
+
+    lexitcode=${exitcrit}
+    lexitstring=
+    lmetadata_json=`${cmd_curl} -H "Authorization: Bearer Oracle" -sSf http://169.254.169.254/opc/v2/instance/ -m 1`
+                                                                                                    #fallback to v1 if v2 fails
+    [ -z "${lmetadata_json}" ] && lmetadata_json=`${cmd_curl} -s http://169.254.169.254/opc/v1/instance/ -m 1`
+                                                                                                  #set exit code
+    [ ! -z "${lmetadata_json}" ] && lexitcode=${exitok} || lexitcode=${exitcrit}
+                                                                                                  #output
+    if [ ! -z "${lmetadata_json}" ]; then
+        lexitstring=`${cmd_echo} "${lmetadata_json}" | ${cmd_jq} -c '.'`
+    fi
+
+    ${cmd_echo} "${lexitstring}"
+    return ${lexitcode}
+}
 
 function oci.help {
     echo you done messed up a-aron!
@@ -465,4 +485,93 @@ function oci.ocid.deconstruct {
 
     local loutput="{\"success\":\"${lsuccess}\",\"revision\":\"${lrevision}\",\"type\":\"${ltype}\",\"tenancy\":\"${ltenancy}\",\"mgmtdomain\":\"${lmgmtdomain}\",\"region\":\"${lregion}\",\"region_short\":\"${lregion_short}\",\"uid\":\"${luid}\",\"profile\":\"${lprofile}\",\"full\":\"${locid}\"}"
     echo ${loutput}
+}
+
+function oci.session.authenticate {
+  local lprofile=${1}
+  local lregion=${2}
+  local lcount=`oci.config.json | jq -c '.oci.profile[] | select((.name == "'${lprofile}'") and .region == "'${lregion}'")' | wc -l | xargs`
+  local ltimestamp_session=
+  local lepoch_session=
+  local lepoch_now=`date +%s`
+  local lepoch_diff=
+
+                                                                                                    #does the profile exist already
+  case ${lcount} in
+    0)
+      echo create config
+      #echo -e "${lprofile}\n" | oci session authenticate --profile ${lprofile} --region ${lregion} --tenancy-name bmc_operator_access
+    ;;
+    1)
+      echo config exists
+    ;;
+    *)
+      echo problem
+    ;;
+  esac
+
+  oci session validate --profile ${lprofile} 2> /dev/null
+  if [ ${?} -eq ${exitok} ]; then
+    echo refresh token
+
+    ltimestamp_session=`oci session validate --profile ${lprofile} 2>&1 | awk '{print $(NF - 1) " " $NF}'`
+    echo $ltimestamp_session
+    lepoch_session=`date.datetime_to_epoch ${ltimestamp_session}`
+    echo ${lepoch_session}
+    echo ${lepoch_now}
+    
+    if [ ${lepoch_now} -lt ${lepoch_session} ]; then
+      echo valid
+      lepoch_diff=$(( ${lepoch_session} - ${lepoch_now} ))
+      echo ${lepoch_diff}
+    else
+      echo invalid
+    fi
+
+  else
+    echo authenticate session
+    
+    #tenancy Name must be bmc_operator_access
+    oci session authenticate --profile-name ${lprofile} --region ${lregion} --tenancy-name bmc_operator_access 1> /dev/null
+  fi
+
+}
+
+
+function oci.config.json {
+
+  local lprofile=
+  local lprofile_new=
+  local lkey=
+  local lvalue=
+  local ljson="{}"
+  local i=0
+  
+  if [ "`jq --version`" == "${jq_version}" ] && [ -f ${oci_config_dir}/config ]; then
+    for line in `cat ${oci_config_dir}/config | sed 's/\[//g' | sed 's/\ //g'`; do
+   
+    #defalult all key/values
+      local lkey=
+      local lvalue=
+
+      echo ${line} | grep \\]$ 1>/dev/null                                    &&  \
+        lprofile_new=`echo ${line} | sed 's/\]//g'`                           ||  \
+        lkey=`${cmd_echo} ${line} | awk -F"=" '{print $1}'`                       \
+        lvalue=`${cmd_echo} ${line} | awk -F"=" '{print $2}'`
+
+      if [ ! -z ${lprofile_new} ] && [ ! -z ${lkey} ]; then
+        if [ "${lprofile}" != "${lprofile_new}" ]; then
+          lprofile=${lprofile_new}
+          (( i++ ))
+          ii=$(( ${i} - 1 ))
+
+          ljson=`echo "${ljson}"  | jq '.oci.profile['${ii}'].name      |=.+ "'"${lprofile}"'"'`
+        fi
+          
+        ljson=`echo "${ljson}"    | jq '.oci.profile['${ii}'].'${lkey}' |=.+ "'"${lvalue}"'"'`
+      fi
+    done 
+  fi
+
+  echo ${ljson} | jq -c
 }

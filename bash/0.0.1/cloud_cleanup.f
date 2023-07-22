@@ -120,7 +120,7 @@ function script.validate.args {
             -o | --output)
                 shift
                 case ${1} in
-                    json | table) output=${1} ;;
+                    json | odo | table) output=${1} ;;
                 esac
             ;;
             -p | --plugins)

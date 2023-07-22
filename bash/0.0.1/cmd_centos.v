@@ -43,6 +43,7 @@ cmd_sed=/usr/bin/sed
 cmd_semanage=/usr/sbin/semanage
 cmd_seq=/usr/bin/seq
 cmd_service=/usr/sbin/service
+cmd_sha1sum=/usr/bin/sha1sum
 cmd_systemctl=/usr/bin/systemctl
 cmd_sleep=/usr/bin/sleep
 cmd_tail=/usr/bin/tail
